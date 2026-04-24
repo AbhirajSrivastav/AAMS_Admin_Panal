@@ -5,7 +5,9 @@ import time
 import pandas as pd
 import datetime
 import os
-from flask import Flask, render_template, Response, jsonify
+import threading
+import platform
+from flask import Flask, render_template, Response, jsonify, send_from_directory
 from database import DatabaseManager
 
 # Try to import RetinaFace; fall back to Haar Cascade if unavailable
@@ -35,17 +37,6 @@ db.update_device_status('Flask Server', 'Active', 'Port 5000 - running')
 # Sample student names for demo (in real scenario, you'd use face recognition)
 STUDENT_NAMES = ['Abhiraj Srivastava', 'Rahul Sharma', 'Sanya Malhotra', 'Vikram Singh', 'Anjali Rao', 'Arya Panday']
 
-# Try to initialize camera
-camera = None
-try:
-    camera = cv2.VideoCapture(0)
-    if not camera.isOpened():
-        print("Warning: Camera could not be opened. Video feed will not work.")
-        camera = None
-except Exception as e:
-    print(f"Error initializing camera: {e}")
-    camera = None
-
 
 def _encode_frame(frame):
     """Encode an OpenCV frame to JPEG bytes for MJPEG streaming."""
@@ -63,35 +54,84 @@ def _placeholder_frame(text, width=640, height=480):
     return _encode_frame(blank)
 
 
-def generate_frames():
-    if camera is None:
-        # Generate a placeholder image if camera is not available
-        import numpy as np
-        blank_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        cv2.putText(blank_frame, 'Camera Not Available', (150, 240), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        ret, buffer = cv2.imencode('.jpg', blank_frame)
-        frame = buffer.tobytes()
-        while True:
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-        return
-    
-    detected_faces = {}  # Track detected faces to avoid duplicate entries
-    
-    while True:
-        try:
-            success, frame = camera.read()
-            if not success:
-                continue
+class CameraThread:
+    def __init__(self):
+        self.camera = None
+        self.frame = None
+        self.stopped = False
+        self.thread = None
+        self.lock = threading.Lock()
+        self.detected_faces = {}
+        self._frame_count = 0
+        
+    def start(self):
+        """Initialize and start the camera capture thread."""
+        if self.thread is not None:
+            return True
             
-            # --- FACIAL DETECTION LOGIC START ---
-            # Sample student names for demo (in real scenario, you'd use face recognition)
-            student_names = ['Abhiraj Srivastava', 'Rahul Sharma', 'Sanya Malhotra', 'Vikram Singh', 'Anjali Rao', 'Arya Panday']
-            import random
-
-            if RETINA_FACE_AVAILABLE:
-                # Use RetinaFace for detection
+        # Use DirectShow backend on Windows for better compatibility
+        if platform.system() == 'Windows':
+            self.camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        else:
+            self.camera = cv2.VideoCapture(0)
+            
+        # Allow camera warm-up time
+        time.sleep(1)
+        
+        if not self.camera or not self.camera.isOpened():
+            print("Warning: Camera could not be opened. Video feed will not work.")
+            self.camera = None
+            return False
+            
+        self.stopped = False
+        self.thread = threading.Thread(target=self._update, daemon=True)
+        self.thread.start()
+        return True
+        
+    def _cleanup_detected_faces(self):
+        """Remove old face tracking entries to prevent memory growth."""
+        now = datetime.datetime.now()
+        old = [k for k, v in self.detected_faces.items() if (now - v).seconds > 60]
+        for k in old:
+            del self.detected_faces[k]
+        
+    def _update(self):
+        """Background loop: continuously read and process frames."""
+        while not self.stopped:
+            if self.camera is None:
+                time.sleep(0.1)
+                continue
+                
+            success, frame = self.camera.read()
+            if not success:
+                time.sleep(0.01)
+                continue
+                
+            # Process frame (face detection overlay)
+            try:
+                frame = self._process_frame(frame)
+            except Exception as e:
+                print(f"Face detection error: {e}")
+                # Continue with raw frame
+                
+            # Encode frame
+            encoded = _encode_frame(frame)
+            
+            with self.lock:
+                self.frame = encoded
+                
+            self._frame_count += 1
+            if self._frame_count % 100 == 0:
+                self._cleanup_detected_faces()
+                
+            time.sleep(0.03)  # ~30 FPS cap
+            
+    def _process_frame(self, frame):
+        """Apply face detection overlay and log attendance."""
+        used_retina = False
+        
+        if RETINA_FACE_AVAILABLE:
+            try:
                 faces = RetinaFace.detect_faces(frame)
                 if isinstance(faces, dict):
                     for key in faces:
@@ -102,38 +142,84 @@ def generate_frames():
                         cv2.putText(frame, 'Face Detected', (x1, y1 - 10),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                        student = random.choice(student_names)
+                        student = random.choice(STUDENT_NAMES)
                         face_id = f"{x1}_{y1}"
-                        if face_id not in detected_faces or (datetime.datetime.now() - detected_faces[face_id]).seconds > 2:
+                        if face_id not in self.detected_faces or (datetime.datetime.now() - self.detected_faces[face_id]).seconds > 2:
                             current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             db.add_attendance(student, current_time, 'Present', 'RetinaFace detected')
-                            detected_faces[face_id] = datetime.datetime.now()
-            else:
-                # Fall back to Haar Cascade
-                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+                            self.detected_faces[face_id] = datetime.datetime.now()
+                    used_retina = True
+            except Exception as e:
+                print(f"RetinaFace error (will fall back to Haar): {e}")
+                
+        if not used_retina:
+            # Fall back to Haar Cascade (no external model downloads needed)
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
 
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-                    cv2.putText(frame, 'Face Detected', (x, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+                cv2.putText(frame, 'Face Detected', (x, y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                    student = random.choice(student_names)
-                    face_id = f"{x}_{y}"
-                    if face_id not in detected_faces or (datetime.datetime.now() - detected_faces[face_id]).seconds > 2:
-                        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        db.add_attendance(student, current_time, 'Present', 'Face detected')
-                        detected_faces[face_id] = datetime.datetime.now()
-            # --- FACIAL DETECTION LOGIC END ---
+                student = random.choice(STUDENT_NAMES)
+                face_id = f"{x}_{y}"
+                if face_id not in self.detected_faces or (datetime.datetime.now() - self.detected_faces[face_id]).seconds > 2:
+                    current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    db.add_attendance(student, current_time, 'Present', 'Face detected')
+                    self.detected_faces[face_id] = datetime.datetime.now()
+                    
+        return frame
+        
+    def get_frame(self):
+        """Get the latest encoded frame (thread-safe)."""
+        with self.lock:
+            return self.frame
+            
+    def stop(self):
+        """Stop the camera thread and release resources."""
+        self.stopped = True
+        if self.thread:
+            self.thread.join(timeout=1)
+        if self.camera:
+            self.camera.release()
 
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
+
+camera_thread = CameraThread()
+
+
+def generate_frames():
+    """MJPEG generator that never hangs — always yields a frame."""
+    # Start camera thread on first request
+    camera_available = camera_thread.start()
+    
+    if not camera_available:
+        frame = _placeholder_frame('Camera Not Available')
+        while True:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-        except Exception as e:
-            print(f"Error in generate_frames: {e}")
-            continue
+            time.sleep(0.5)
+        return
+    
+    # Wait briefly for the first captured frame
+    frame = _placeholder_frame('Camera Initializing...')
+    for _ in range(100):
+        latest = camera_thread.get_frame()
+        if latest is not None:
+            frame = latest
+            break
+        time.sleep(0.05)
+    
+    while True:
+        latest = camera_thread.get_frame()
+        if latest is not None:
+            frame = latest
+            
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        time.sleep(0.03)
+
 
 @app.route('/')
 def index():
@@ -158,6 +244,10 @@ def device_status():
 @app.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/script.js')
+def serve_script():
+    return send_from_directory(current_dir, 'script.js')
 
 @app.route('/api/data')
 def get_data():
@@ -202,4 +292,6 @@ def get_device_status():
     return jsonify(devices)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # use_reloader=False prevents the camera from being locked by the reloader process
+    app.run(debug=True, use_reloader=False, threaded=True)
+
