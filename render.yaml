@@ -1,0 +1,53 @@
+# Render Blueprint (render.yaml)
+# ==============================
+# This file tells Render how to build and deploy the Attendance Management
+# System, including auto-provisioning a managed PostgreSQL database.
+#
+# Usage:
+#   1. Push this file to your GitHub repo.
+#   2. In the Render Dashboard, click "New" → "Blueprint".
+#   3. Select the repository and follow the prompts.
+#
+# Docs: https://docs.render.com/blueprint-spec
+
+services:
+  - type: web
+    name: attendance-management-system
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        fromDatabase:
+          name: attendance-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: attendance-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: attendance-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: attendance-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: attendance-db
+          property: password
+
+databases:
+  - name: attendance-db
+    plan: free
+    databaseName: attendance_db
+    user: attendance_user
+

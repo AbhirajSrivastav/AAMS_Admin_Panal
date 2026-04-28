@@ -30,5 +30,5 @@ python-dotenv==1.0.0
 # Flask-RESTful==0.3.10
 # Flask-Bcrypt==1.0.1
 # celery==5.3.6
-# gunicorn==21.2.0
+gunicorn==21.2.0
 
