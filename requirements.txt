@@ -13,10 +13,11 @@ pytz==2023.3
 six==1.16.0
 
 # Video & face recognition
-opencv-python>=4.10.0.84
-face-recognition>=1.3.0
+opencv-python-headless>=4.10.0.84
+# Disabled for cloud (causes build failure)
+#face-recognition>=1.3.0
 Pillow>=10.0.0
-
+#dlib
 # Database
 psycopg2-binary==2.9.9
 
