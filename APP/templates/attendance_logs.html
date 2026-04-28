@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Logs - AAMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <span>Attendance Logs</span>
+        <div>
+            <input type="date" id="dateFilter" class="search-bar" style="width: 150px;">
+            <button onclick="loadAttendance()" class="chart-btn active" style="margin-left: 10px;">Filter</button>
+        </div>
+    </div>
+    <div id="attendance-table-wrapper">
+        <table class="data-table" id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student</th>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6" style="text-align:center;">Loading logs...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadAttendance() {
+        try {
+            const date = document.getElementById('dateFilter').value;
+            let url = '/api/attendance-logs?limit=100';
+            if (date) {
+                url = `/api/attendance-logs/${date}`;
+            }
+            const response = await fetch(url);
+            const logs = await response.json();
+            const tbody = document.querySelector('#attendanceTable tbody');
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No attendance records found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td>${log.id}</td>
+                    <td>${log.student_name || 'Unknown'}</td>
+                    <td>${log.date}</td>
+                    <td>${log.check_in_time ? new Date(log.check_in_time).toLocaleTimeString() : '-'}</td>
+                    <td><span class="status-badge ${log.status === 'Present' ? 'green' : log.status === 'Late' ? 'orange' : 'red'}">${log.status}</span></td>
+                    <td>${log.notes || '-'}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error('Failed to load attendance logs:', e);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', loadAttendance);
+</script>
+{% endblock %}
+

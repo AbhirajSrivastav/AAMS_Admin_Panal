@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Student Directory - AAMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <span>Student Directory</span>
+        <input type="text" id="studentSearch" class="search-bar" placeholder="Search students..." style="width: 250px;">
+    </div>
+    <div id="students-table-wrapper">
+        <table class="data-table" id="studentsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Student ID</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6" style="text-align:center;">Loading students...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadStudents() {
+        try {
+            const response = await fetch('/api/students');
+            const students = await response.json();
+            const tbody = document.querySelector('#studentsTable tbody');
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No students found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = students.map(s => `
+                <tr>
+                    <td>${s.id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.student_id}</td>
+                    <td>${s.email}</td>
+                    <td>${s.phone || '-'}</td>
+                    <td><span class="status-badge ${s.status === 'Active' ? 'green' : 'red'}">${s.status}</span></td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error('Failed to load students:', e);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', loadStudents);
+
+    document.getElementById('studentSearch').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}AAMS Dashboard{% endblock %}
+
+{% block content %}
+<section class="stats-grid">
+    <div class="stat-card blue" id="total-count-card">
+        <h3>Total Students</h3>
+        <p id="total-count">Loading...</p>
+    </div>
+    <div class="stat-card green" id="present-card">
+        <h3>Present Today</h3>
+        <p id="present-count">Loading...</p>
+    </div>
+    <div class="stat-card red">
+        <h3>Absent Today</h3>
+        <p id="absent-count">Loading...</p>
+    </div>
+    <div class="stat-card orange">
+        <h3>Late Arrivals</h3>
+        <p id="late-count">Loading...</p>
+    </div>
+</section>
+
+<div class="dashboard-row">
+    <div class="card">
+        <div class="card-header">Live Feed</div>
+        <div class="live-feed-box">
+            <img id="videoFeed" src="{{ url_for('dashboard.video_feed') }}" alt="Camera Feed" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span>Weekly Attendance Trend</span>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="updateAttendanceChart('week')" id="weekBtn" class="chart-btn active">Week</button>
+                <button onclick="updateAttendanceChart('month')" id="monthBtn" class="chart-btn">Month</button>
+                <button onclick="updateAttendanceChart('year')" id="yearBtn" class="chart-btn">Year</button>
+            </div>
+        </div>
+        <div style="position: relative; height: 300px; width: 100%; margin-bottom: 20px;">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+        <div class="stats-footer">
+            <div class="stat-box">
+                <p class="stat-label">Avg Present</p>
+                <p id="avgPresent" class="stat-value green">-</p>
+            </div>
+            <div class="stat-box">
+                <p class="stat-label">Avg Absent</p>
+                <p id="avgAbsent" class="stat-value red">-</p>
+            </div>
+            <div class="stat-box">
+                <p class="stat-label">Avg Late</p>
+                <p id="avgLate" class="stat-value orange">-</p>
+            </div>
+            <div class="stat-box">
+                <p class="stat-label">Rate</p>
+                <p id="attendanceRate" class="stat-value blue">-</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <div class="card-header">Recent Activity Feed</div>
+    <div id="activityFeed">
+        <div class="activity-item">
+            System ready - waiting for detections...
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}
+

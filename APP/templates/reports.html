@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - AAMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-row">
+    <div class="card">
+        <div class="card-header">Daily Attendance Summary</div>
+        <div style="position: relative; height: 300px;">
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Student Status Breakdown</div>
+        <div style="position: relative; height: 300px;">
+            <canvas id="statusPie"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <div class="card-header">Weekly Summary</div>
+    <table class="data-table" id="weeklyTable">
+        <thead>
+            <tr><th>Date</th><th>Present</th><th>Absent</th><th>Late</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}
+

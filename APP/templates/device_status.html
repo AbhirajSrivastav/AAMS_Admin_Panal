@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Device Status - AAMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">System Health Monitor</div>
+    <div id="device-status-wrapper">
+        <table class="data-table" id="deviceTable">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Status</th>
+                    <th>Last Seen</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" style="text-align:center;">Loading device status...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadDeviceStatus() {
+        try {
+            const response = await fetch('/api/device-status');
+            const devices = await response.json();
+            const tbody = document.querySelector('#deviceTable tbody');
+            if (!Array.isArray(devices) || devices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No device data available</td></tr>';
+                return;
+            }
+            tbody.innerHTML = devices.map(d => `
+                <tr>
+                    <td>${d.device_name}</td>
+                    <td><span class="status-badge ${d.status === 'Active' ? 'green' : d.status === 'Error' ? 'red' : 'orange'}">${d.status}</span></td>
+                    <td>${d.last_seen ? new Date(d.last_seen).toLocaleString() : '-'}</td>
+                    <td>${d.details || '-'}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error('Failed to load device status:', e);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', loadDeviceStatus);
+</script>
+{% endblock %}
+

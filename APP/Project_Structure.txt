@@ -1,5 +1,0 @@
-/project-root
-│── app.py             # The Flask Backend
-│── attendance.csv     # Data storage
-│── static/            # CSS/JS files
-└── templates/         # Your HTML dashboard
