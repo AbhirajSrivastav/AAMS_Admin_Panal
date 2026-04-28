@@ -1,10 +1,10 @@
 # AAMS - Attendance Management System v2.0
 
-**Advanced Face Recognition Based Attendance Management System with SQLite3 Database Integration**
+**Advanced Face Recognition Based Attendance Management System with PostgreSQL Database Integration**
 
 ![Python](https://img.shields.io/badge/Python-3.7+-blue)
 ![Flask](https://img.shields.io/badge/Flask-2.3-green)
-![SQLite3](https://img.shields.io/badge/SQLite3-Built--in-lightblue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.8-red)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
@@ -14,7 +14,7 @@
 
 AAMS (Attendance Management System) is a comprehensive solution that combines:
 - **Real-time video processing** with face detection
-- **Automatic attendance logging** to SQLite3 database
+- **Automatic attendance logging** to PostgreSQL database
 - **Interactive dashboard** with live analytics
 - **Multi-page web interface** for student & attendance management
 - **RESTful API** for integration with other systems
@@ -63,10 +63,11 @@ The system automatically detects students entering through a camera feed and rec
 - Uptime tracking
 
 ### 🗄️ Database Integration
-- SQLite3 persistent storage
+- PostgreSQL persistent storage
 - 4 optimized tables (students, attendance_logs, daily_stats, device_status)
 - Automatic schema creation
 - Sample data pre-population
+- Environment variable configuration via `.env`
 
 ---
 
@@ -75,6 +76,7 @@ The system automatically detects students entering through a camera feed and rec
 ### Prerequisites
 ```bash
 Python 3.7+
+PostgreSQL 14+
 Webcam/Camera (for video feed)
 Modern web browser
 ```
@@ -91,17 +93,27 @@ cd attendance-management-system/app/Dashboard
 pip install -r requirements.txt
 ```
 
-3. **Run the application:**
+3. **Configure environment variables:**
+Create a `.env` file in the root directory:
+```bash
+DB_HOST=localhost
+DB_NAME=attendance_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_PORT=5432
+```
+
+4. **Run the application:**
 ```bash
 python app.py
 ```
 
-4. **Open in browser:**
+5. **Open in browser:**
 ```
 http://localhost:5000
 ```
 
-That's it! The database will be created automatically with sample data.
+That's it! The database tables will be created automatically with sample data.
 
 ---
 
@@ -110,7 +122,8 @@ That's it! The database will be created automatically with sample data.
 ```
 Dashboard/
 ├── app.py                          # Flask backend
-├── database.py                     # SQLite3 manager
+├── database.py                     # PostgreSQL manager
+├── schema.sql                      # Optional manual schema
 ├── Index.html                      # Home dashboard
 ├── StudentDirectory.html           # Student list
 ├── AttendanceLogs.html            # Attendance records
@@ -119,7 +132,7 @@ Dashboard/
 ├── script.js                       # Frontend logic
 ├── static/
 │   └── style.css                  # Styling
-└── attendance.db                   # SQLite3 database (auto-created)
+└── .env                            # Database credentials
 ```
 
 ---
@@ -152,7 +165,7 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete details.
 
 ### Students Table
 ```sql
-- id (INTEGER PRIMARY KEY)
+- id (SERIAL PRIMARY KEY)
 - name (TEXT UNIQUE)
 - student_id (TEXT UNIQUE)
 - email (TEXT UNIQUE)
@@ -163,7 +176,7 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete details.
 
 ### Attendance Logs Table
 ```sql
-- id (INTEGER PRIMARY KEY)
+- id (SERIAL PRIMARY KEY)
 - student_id (INTEGER FK)
 - check_in_time (TIMESTAMP)
 - check_out_time (TIMESTAMP)
@@ -266,10 +279,14 @@ if __name__ == '__main__':
     app.run(debug=True, port=5001)
 ```
 
-### Database Location
-Edit `app.py`:
-```python
-db = DatabaseManager('custom_path/attendance.db')
+### Database Connection
+Edit `.env` file or set environment variables:
+```bash
+DB_HOST=localhost
+DB_NAME=your_database
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_PORT=5432
 ```
 
 ### Camera Selection
@@ -284,9 +301,11 @@ camera = cv2.VideoCapture(1)  # Use different index
 
 ```
 Flask==2.3.3              # Web framework
-pandas==2.0.3            # Data handling
-opencv-python==4.8.0.74  # Video processing
-numpy==1.24.3            # Scientific computing
+pandas>=2.2.0            # Data handling
+opencv-python>=4.10.0.84  # Video processing
+numpy>=2.0.0             # Scientific computing
+psycopg2-binary==2.9.9   # PostgreSQL adapter
+python-dotenv==1.0.0     # Environment variables
 Werkzeug==2.3.7          # WSGI utilities
 ```
 
@@ -310,11 +329,16 @@ lsof -ti:5000 | xargs kill -9  # Mac/Linux
 netstat -ano | findstr :5000   # Windows
 ```
 
-### Database locked
+### Database connection failed
 ```bash
-# Reset database
-rm attendance.db
-# Restart Flask server
+# Check PostgreSQL is running
+sudo service postgresql status  # Linux
+pg_isready -h localhost -p 5432 # Verify connection
+
+# Common fixes:
+# 1. Update .env with correct credentials
+# 2. Verify database exists: createdb attendance_db
+# 3. Check PostgreSQL logs for errors
 ```
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for more help.
@@ -415,7 +439,7 @@ This project is provided as-is for educational and institutional use.
 
 **Version:** 2.0  
 **Last Updated:** February 17, 2026  
-**Database:** SQLite3  
+**Database:** PostgreSQL  
 **Framework:** Flask  
 **Frontend:** HTML/CSS/JavaScript  
 **Video Processing:** OpenCV  
@@ -426,7 +450,7 @@ This project is provided as-is for educational and institutional use.
 
 - **Python** - Backend logic
 - **Flask** - Web framework
-- **SQLite3** - Database
+- **PostgreSQL** - Database
 - **OpenCV** - Face detection
 - **Chart.js** - Data visualization
 - **Font Awesome** - Icons
@@ -437,7 +461,7 @@ This project is provided as-is for educational and institutional use.
 ## 💡 Key Highlights
 
 ✅ **Zero Configuration** - Works out of the box  
-✅ **Auto Database** - SQLite3 created automatically  
+✅ **Auto Database** - PostgreSQL tables created automatically  
 ✅ **Face Detection** - OpenCV powered  
 ✅ **Real-time Updates** - Live statistics  
 ✅ **Responsive Design** - Mobile friendly  

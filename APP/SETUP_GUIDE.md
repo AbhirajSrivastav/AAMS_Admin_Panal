@@ -3,6 +3,7 @@
 ## Prerequisites
 
 - Python 3.7+
+- PostgreSQL 14+
 - pip (Python package manager)
 - Webcam/Camera (for video feed)
 - Modern web browser
@@ -27,17 +28,44 @@ pip install -r requirements.txt
 - Flask (web server)
 - OpenCV (video processing)
 - Pandas (data handling)
-- SQLite3 support (included in Python)
+- psycopg2-binary (PostgreSQL adapter)
+- python-dotenv (environment variables)
 
-### 3. Initialize Database
+### 3. Configure Environment Variables
 
-The database is automatically created on first run. It will:
-- Create `attendance.db` with all tables
+Create a `.env` file in the project root:
+
+```bash
+DB_HOST=localhost
+DB_NAME=attendance_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_PORT=5432
+```
+
+**Alternatively**, set system environment variables with the same names.
+
+### 4. Create PostgreSQL Database (Optional)
+
+If the database doesn't exist, create it:
+
+```bash
+# Using psql
+createdb attendance_db
+
+# Or via SQL
+psql -U postgres -c "CREATE DATABASE attendance_db;"
+```
+
+### 5. Initialize Database
+
+The database tables are automatically created on first run. It will:
+- Create all tables (students, attendance_logs, daily_stats, device_status)
 - Insert 6 sample students
 - Insert sample attendance records
 - Initialize device status entries
 
-### 4. Run the Application
+### 6. Run the Application
 
 ```bash
 python app.py
@@ -51,7 +79,7 @@ WARNING in app.run_simple
   * Press CTRL+C to quit
 ```
 
-### 5. Open in Browser
+### 7. Open in Browser
 
 Visit: `http://localhost:5000`
 
@@ -61,12 +89,12 @@ You should see the AAMS Dashboard!
 
 ## Database Integration Guide
 
-### How SQLite3 Works
+### How PostgreSQL Works
 
-SQLite3 is a file-based database - no server needed:
-- **File**: `attendance.db` (created automatically)
-- **Size**: Starts small, grows with data
-- **Backup**: Simply copy the file
+PostgreSQL is a powerful, open-source relational database:
+- **Server**: Runs as a service (localhost or remote)
+- **Connection**: Via TCP/IP on port 5432 (default)
+- **Backup**: Use `pg_dump` for reliable backups
 
 ### Database Manager Class
 
@@ -75,8 +103,8 @@ The `database.py` file contains the `DatabaseManager` class that handles:
 ```python
 from database import DatabaseManager
 
-# Initialize database
-db = DatabaseManager('attendance.db')
+# Initialize database (reads from .env automatically)
+db = DatabaseManager()
 
 # Add a student
 db.add_student('John Doe', 'STU123', 'john@school.com', '1234567890')
@@ -88,6 +116,16 @@ db.add_attendance('John Doe', '2026-02-17 09:15:00', 'Present', 'Face detected')
 stats = db.get_attendance_stats()
 print(stats)  # {'total_students': 285, 'present_today': 250, ...}
 ```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| DB_HOST | localhost | PostgreSQL server host |
+| DB_NAME | attendance_db | Database name |
+| DB_USER | postgres | Database user |
+| DB_PASSWORD | (empty) | User password |
+| DB_PORT | 5432 | Server port |
 
 ### Sample Data
 
@@ -105,7 +143,7 @@ When faces are detected by the camera:
 1. OpenCV detects the face
 2. System picks a random student (demo mode)
 3. Attendance record is created
-4. Record is saved to database
+4. Record is saved to PostgreSQL database
 5. Dashboard updates in real-time
 
 ---
@@ -122,10 +160,14 @@ When faces are detected by the camera:
 - Database initialization
 
 **database.py** (Database Manager)
-- SQLite3 connection
+- PostgreSQL connection
 - CRUD operations
 - Statistical queries
 - Device status tracking
+
+**schema.sql** (Optional)
+- Standalone schema for manual database setup
+- Useful for DBAs or CI/CD pipelines
 
 ### HTML Pages
 
@@ -193,11 +235,15 @@ Edit `app.py` `generate_frames()` function:
 camera = cv2.VideoCapture(0)  # 0 = default, 1 = external USB camera
 ```
 
-### Database Location
+### Database Connection
 
-Edit path in `app.py`:
-```python
-db = DatabaseManager(os.path.join(current_dir, 'custom_location/attendance.db'))
+Edit `.env` file:
+```bash
+DB_HOST=remote.server.com
+DB_NAME=production_db
+DB_USER=aams_user
+DB_PASSWORD=secure_password
+DB_PORT=5432
 ```
 
 ---
@@ -286,6 +332,13 @@ for device in devices:
 pip install opencv-python
 ```
 
+### Issue: "ModuleNotFoundError: No module named 'psycopg2'"
+
+**Solution:**
+```bash
+pip install psycopg2-binary
+```
+
 ### Issue: "Can't open camera (Camera Not Available)"
 
 **Solutions:**
@@ -294,12 +347,29 @@ pip install opencv-python
 - Try different camera index (0, 1, 2)
 - Restart camera service
 
-### Issue: "Database locked"
+### Issue: "Database connection failed" / "could not connect to server"
 
 **Solutions:**
-- Close other connections to database
-- Restart Flask server
-- Delete `attendance.db-journal` file if exists
+1. Check PostgreSQL is running:
+   ```bash
+   sudo service postgresql status  # Linux
+   pg_isready -h localhost -p 5432 # Cross-platform
+   ```
+
+2. Verify `.env` credentials are correct
+
+3. Ensure database exists:
+   ```bash
+   psql -U postgres -c "CREATE DATABASE attendance_db;"
+   ```
+
+4. Check pg_hba.conf for access rules:
+   ```bash
+   # Allow local connections
+   host all all 127.0.0.1/32 md5
+   ```
+
+5. Check PostgreSQL logs for detailed errors
 
 ### Issue: "Port 5000 already in use"
 
@@ -312,8 +382,8 @@ pip install opencv-python
 **Solutions:**
 - Check database is initialized
 - Verify sample data was inserted
-- Check database file exists: `ls attendance.db`
-- Reset database: delete `attendance.db` and restart
+- Check connection to PostgreSQL
+- Check application logs for SQL errors
 
 ---
 
@@ -322,29 +392,34 @@ pip install opencv-python
 ### Backup Database
 
 ```bash
-# Windows
-copy attendance.db attendance.db.backup
+# Using pg_dump (recommended)
+pg_dump -U postgres -d attendance_db > backup.sql
 
-# Linux/Mac
-cp attendance.db attendance.db.backup
+# Windows
+pg_dump.exe -U postgres -d attendance_db > backup.sql
 ```
 
 ### Restore from Backup
 
 ```bash
-# Windows
-copy attendance.db.backup attendance.db
+# Restore
+psql -U postgres -d attendance_db < backup.sql
 
-# Linux/Mac
-cp attendance.db.backup attendance.db
+# Or create new DB and restore
+createdb attendance_db_restore
+psql -U postgres -d attendance_db_restore < backup.sql
 ```
 
 ### Reset Database
 
-Simply delete the file - it will be recreated automatically:
+Drop and recreate the database:
 ```bash
-del attendance.db  # Windows
-rm attendance.db   # Linux/Mac
+# Linux/Mac
+dropdb attendance_db && createdb attendance_db
+
+# Windows
+psql -U postgres -c "DROP DATABASE attendance_db;"
+psql -U postgres -c "CREATE DATABASE attendance_db;"
 ```
 
 ---
@@ -354,6 +429,7 @@ rm attendance.db   # Linux/Mac
 1. **Large Datasets**
    - Add database indexes for faster queries
    - Archive old records regularly
+   - Use PostgreSQL connection pooling (PgBouncer)
 
 2. **Camera Feed**
    - Reduce resolution for faster processing
@@ -362,6 +438,7 @@ rm attendance.db   # Linux/Mac
 3. **Multiple Users**
    - Add authentication layer
    - Implement user roles
+   - Use PostgreSQL row-level security
 
 ---
 
@@ -414,9 +491,10 @@ For production use, consider:
    - Implement API key validation
 
 2. **Database**
-   - Use PostgreSQL/MySQL
-   - Set up automatic backups
-   - Enable database encryption
+   - Use PostgreSQL connection pooling
+   - Set up automatic backups (pg_dump cron job)
+   - Enable database encryption (SSL)
+   - Create dedicated application user (not postgres superuser)
 
 3. **Server**
    - Use production WSGI server (Gunicorn)
@@ -425,7 +503,7 @@ For production use, consider:
 
 4. **Monitoring**
    - Set up logging
-   - Monitor database size
+   - Monitor database connections
    - Track API performance
 
 ---
@@ -436,7 +514,7 @@ For issues or questions:
 1. Check API_DOCUMENTATION.md
 2. Review PROJECT_STRUCTURE.md
 3. Check application logs
-4. Verify database connection
+4. Verify PostgreSQL connection: `pg_isready -h localhost -p 5432`
 
 ---
 

@@ -1,9 +1,12 @@
-# Fix Live#FedBu-TODO
+# PostgreSQL Integration TODO
 
-##.SAeP Refactor `generate_frames()` to always yield frames
-1.. [ ] Fix APP/HTML fie- s fpttjr `genepata_trhmes()` to`a/waysic/scri
-2.. [ ]Fix HT L files - Updatve `APP/scrip pathttojs/` to `APP/static/script.js`
-3.. [ A/ovet`APP/scrtpt.j/`styFiAPP/x `.live-feed-box::after` overflow
-4. [ ] Fix `APP/static/style.css` - Fix `.live-feed5box::after` overflow
-5.. [ ] Restart Flask server and verify
+## Steps Completed
 
+- [x] 1. Update `APP/requirements.txt` — add `python-dotenv` dependency
+- [x] 2. Create `.env.example` — PostgreSQL connection placeholders
+- [x] 3. Update `APP/database.py` — load credentials from env vars, add error handling
+- [x] 4. Update `APP/README.md` — replace SQLite3 references with PostgreSQL
+- [x] 5. Update `APP/SETUP_GUIDE.md` — add PostgreSQL setup & `.env` instructions
+- [x] 6. Update `APP/API_DOCUMENTATION.md` — correct database type info
+- [x] 7. Create `APP/schema.sql` — standalone schema for manual PostgreSQL setup
+- [x] 8. All changes verified

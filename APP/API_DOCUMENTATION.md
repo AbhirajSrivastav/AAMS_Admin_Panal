@@ -1,14 +1,14 @@
 # AAMS API Documentation
 
 ## Database Integration
-The system now uses **SQLite3** for persistent data storage. All data is stored in `attendance.db` with the following tables:
+The system uses **PostgreSQL** for persistent data storage. Connection parameters are read from environment variables or a `.env` file. All data is stored in the configured PostgreSQL database with the following tables:
 
 ### Database Tables
 
 #### 1. Students Table
 Stores student information
 ```sql
-- id: INTEGER PRIMARY KEY
+- id: SERIAL PRIMARY KEY
 - name: TEXT (unique)
 - student_id: TEXT (unique)
 - email: TEXT (unique)
@@ -20,7 +20,7 @@ Stores student information
 #### 2. Attendance Logs Table
 Records daily attendance
 ```sql
-- id: INTEGER PRIMARY KEY
+- id: SERIAL PRIMARY KEY
 - student_id: INTEGER FK (students.id)
 - check_in_time: TIMESTAMP
 - check_out_time: TIMESTAMP (nullable)
@@ -33,7 +33,7 @@ Records daily attendance
 #### 3. Daily Stats Table
 Pre-calculated daily statistics
 ```sql
-- id: INTEGER PRIMARY KEY
+- id: SERIAL PRIMARY KEY
 - date: DATE (unique)
 - total_students: INTEGER
 - present: INTEGER
@@ -45,13 +45,27 @@ Pre-calculated daily statistics
 #### 4. Device Status Table
 Monitors system components
 ```sql
-- id: INTEGER PRIMARY KEY
+- id: SERIAL PRIMARY KEY
 - device_name: TEXT (unique)
 - status: TEXT (Active/Inactive)
 - last_seen: TIMESTAMP
 - uptime_seconds: INTEGER
 - details: TEXT
 ```
+
+---
+
+## Environment Variables
+
+The application reads the following environment variables (or from `.env`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| DB_HOST | localhost | PostgreSQL server host |
+| DB_NAME | attendance_db | Database name |
+| DB_USER | postgres | Database user |
+| DB_PASSWORD | (empty) | User password |
+| DB_PORT | 5432 | Server port |
 
 ---
 
@@ -275,7 +289,7 @@ db.get_device_status()             # Get all devices
 ```python
 from database import DatabaseManager
 
-db = DatabaseManager('attendance.db')
+db = DatabaseManager()  # Reads credentials from .env automatically
 
 # Get all students
 students = db.get_all_students()
@@ -309,14 +323,14 @@ fetch('/api/stats')
 
 ## Data Persistence
 
-All data is automatically saved to SQLite database:
-- **Location**: `attendance.db` (same directory as app.py)
-- **Size**: Grows ~0.5MB per 1000 attendance records
-- **Backup**: Regular backups recommended
+All data is automatically saved to PostgreSQL database:
+- **Host**: Configured via `DB_HOST` (default: localhost)
+- **Database**: Configured via `DB_NAME` (default: attendance_db)
+- **Backup**: Use `pg_dump` for backups
 
 To backup database:
 ```bash
-cp attendance.db attendance.db.backup
+pg_dump -U postgres -d attendance_db > backup.sql
 ```
 
 ---
@@ -328,3 +342,4 @@ cp attendance.db attendance.db.backup
 - API responses include all related information (student names with logs)
 - Device status is automatically updated on system startup
 - Camera detection limits to 1 record per face every 2 seconds to prevent duplicates
+- Connection parameters are loaded from `.env` file or environment variables

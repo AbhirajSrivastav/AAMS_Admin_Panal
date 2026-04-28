@@ -1,10 +1,12 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow info/warning logs
+
 import cv2
 import numpy as np
 import random
 import time
 import pandas as pd
 import datetime
-import os
 import threading
 import platform
 from flask import Flask, render_template, Response, jsonify, send_from_directory
@@ -16,6 +18,9 @@ try:
     RETINA_FACE_AVAILABLE = True
 except Exception:
     RETINA_FACE_AVAILABLE = False
+
+# Track if RetinaFace model loads successfully at runtime (prevents repeated errors)
+_retinaface_working = RETINA_FACE_AVAILABLE
 
 # Get the current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -111,8 +116,9 @@ class CameraThread:
             try:
                 frame = self._process_frame(frame)
             except Exception as e:
+                # Log once only to prevent console spam
                 print(f"Face detection error: {e}")
-                # Continue with raw frame
+                break
                 
             # Encode frame
             encoded = _encode_frame(frame)
@@ -128,9 +134,10 @@ class CameraThread:
             
     def _process_frame(self, frame):
         """Apply face detection overlay and log attendance."""
+        global _retinaface_working
         used_retina = False
         
-        if RETINA_FACE_AVAILABLE:
+        if _retinaface_working:
             try:
                 faces = RetinaFace.detect_faces(frame)
                 if isinstance(faces, dict):
@@ -150,7 +157,9 @@ class CameraThread:
                             self.detected_faces[face_id] = datetime.datetime.now()
                     used_retina = True
             except Exception as e:
-                print(f"RetinaFace error (will fall back to Haar): {e}")
+                # Disable RetinaFace permanently after first failure to prevent error spam
+                _retinaface_working = False
+                print(f"RetinaFace failed (switching to Haar Cascade): {e}")
                 
         if not used_retina:
             # Fall back to Haar Cascade (no external model downloads needed)
@@ -294,4 +303,3 @@ def get_device_status():
 if __name__ == '__main__':
     # use_reloader=False prevents the camera from being locked by the reloader process
     app.run(debug=True, use_reloader=False, threaded=True)
-
