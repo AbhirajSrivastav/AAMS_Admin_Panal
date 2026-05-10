@@ -1,4 +1,4 @@
-# AAMS - AI Attendance Management System
+# AAMS - AIAttendance Management System
 
 **Advanced Face Recognition Based Attendance Management System with PostgreSQL Database Integration**
 
