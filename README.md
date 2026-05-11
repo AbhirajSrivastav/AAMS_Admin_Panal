@@ -1,25 +1,49 @@
-🚀 AAMS — Automated Attendance Management System
-Advanced AI-Powered Face Recognition Attendance Platform
-Python Flask PostgreSQL OpenCV Status
+# 🚀 AAMS — Automated Attendance Management System
 
-⚡ Real-Time Face Recognition • Smart Attendance Tracking • Modular Flask Architecture
-📌 Overview
-AAMS (Automated Attendance Management System) is a production-ready AI-powered attendance platform built using Flask, PostgreSQL, OpenCV, and face_recognition.
+<div align="center">
+
+### Advanced AI-Powered Face Recognition Attendance Platform
+
+![Python](https://img.shields.io/badge/Python-3.7+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-2.3-000000?style=for-the-badge&logo=flask&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-4.8-red?style=for-the-badge&logo=opencv&logoColor=white)
+![Status](https://img.shields.io/badge/STATUS-ACTIVE-success?style=for-the-badge)
+
+---
+
+### ⚡ Real-Time Face Recognition • Smart Attendance Tracking • Modular Flask Architecture
+
+</div>
+
+---
+
+# 📌 Overview
+
+**AAMS (Automated Attendance Management System)** is a production-ready AI-powered attendance platform built using **Flask**, **PostgreSQL**, **OpenCV**, and **face_recognition**.
 
 The system automatically detects students through a live camera feed, identifies them using facial recognition, and stores attendance records in a PostgreSQL database with real-time analytics support.
 
-✨ Core Features
-🎥 Real-time face detection & recognition
-🧠 AI-based attendance automation
-🗄 PostgreSQL database integration
-📊 Interactive analytics dashboard
-🌐 RESTful API architecture
-⚡ MJPEG live video streaming
-🏗 Modular Flask application structure
-📈 Attendance reports & statistics
-🔄 Dynamic face dataset reloading
-🛡 Production-ready scalable architecture
-🏗 Project Structure
+---
+
+# ✨ Core Features
+
+- 🎥 Real-time face detection & recognition
+- 🧠 AI-based attendance automation
+- 🗄 PostgreSQL database integration
+- 📊 Interactive analytics dashboard
+- 🌐 RESTful API architecture
+- ⚡ MJPEG live video streaming
+- 🏗 Modular Flask application structure
+- 📈 Attendance reports & statistics
+- 🔄 Dynamic face dataset reloading
+- 🛡 Production-ready scalable architecture
+
+---
+
+# 🏗 Project Structure
+
+```text
 AAMS_Admin_Panal/
 │
 ├── run.py                     # Application entry point
@@ -70,8 +94,15 @@ AAMS_Admin_Panal/
 │   └── utils/
 │       ├── camera.py
 │       └── helpers.py
-🧠 Face Recognition Workflow
-📁 Dataset Structure
+```
+
+---
+
+# 🧠 Face Recognition Workflow
+
+## 📁 Dataset Structure
+
+```text
 APP/Image_DATA/
 │
 ├── Abhiraj/
@@ -83,40 +114,71 @@ APP/Image_DATA/
 │   ├── face1.jpg
 │   ├── face2.jpg
 │   └── face3.jpg
-⚙️ Recognition Pipeline
-1️⃣ Dataset Scanning
-The system scans all student folders inside Image_DATA/.
+```
 
-2️⃣ Face Encoding
-Each image is converted into a 128-dimensional face embedding vector using:
+---
 
+## ⚙️ Recognition Pipeline
+
+### 1️⃣ Dataset Scanning
+The system scans all student folders inside `Image_DATA/`.
+
+### 2️⃣ Face Encoding
+Each image is converted into a **128-dimensional face embedding vector** using:
+
+```python
 face_recognition.face_encodings()
-3️⃣ Encoding Averaging
-Multiple encodings for a student are averaged to improve:
+```
 
-Lighting robustness
-Expression handling
-Pose variation tolerance
-4️⃣ Face Detection
+### 3️⃣ Encoding Averaging
+Multiple encodings for a student are averaged to improve:
+- Lighting robustness
+- Expression handling
+- Pose variation tolerance
+
+### 4️⃣ Face Detection
 Incoming frames are processed using:
 
+```python
 face_recognition.face_locations()
-5️⃣ Face Matching
+```
+
+### 5️⃣ Face Matching
 Detected faces are matched against stored encodings using:
 
+```python
 face_recognition.compare_faces()
-6️⃣ Attendance Logging
+```
+
+### 6️⃣ Attendance Logging
 Matched students are automatically recorded into PostgreSQL with timestamps.
 
-⚙️ Installation
-1️⃣ Clone Repository
+---
+
+# ⚙️ Installation
+
+## 1️⃣ Clone Repository
+
+```bash
 git clone https://github.com/your-username/AAMS.git
 cd AAMS
-2️⃣ Install Dependencies
-pip install -r requirements.txt
-3️⃣ Configure Environment Variables
-Create a .env file:
+```
 
+---
+
+## 2️⃣ Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 3️⃣ Configure Environment Variables
+
+Create a `.env` file:
+
+```env
 SECRET_KEY=your-secret-key
 
 DB_HOST=localhost
@@ -124,73 +186,147 @@ DB_NAME=attendance_db
 DB_USER=postgres
 DB_PASSWORD=your_password
 DB_PORT=5432
-4️⃣ Create PostgreSQL Database
-CREATE DATABASE attendance_db;
-🚀 Running the Application
-Development Mode
-python run.py
-Production Mode
-gunicorn wsgi:app --bind 0.0.0.0:5000 --workers 2
-Open Application
-http://localhost:5000
-🌐 API Endpoints
-Endpoint	Method	Description
-/	GET	Dashboard Home
-/student-directory	GET	Student Directory
-/attendance-logs	GET	Attendance Logs
-/reports	GET	Analytics Dashboard
-/device-status	GET	System Health
-/video_feed	GET	Live Camera Stream
-/api/stats	GET	Today's Statistics
-/api/data	GET	Recent Attendance Data
-/api/students	GET	Student Records
-/api/attendance-logs	GET	Attendance Logs API
-/api/attendance-logs/<date>	GET	Logs By Date
-/api/weekly-stats	GET	Weekly Reports
-/api/device-status	GET	Device Monitoring
-/api/reload-faces	POST	Reload Face Dataset
-🏛 Application Factory Architecture
-AAMS uses Flask's Application Factory Pattern.
+```
 
-Benefits
-Modular blueprint architecture
-Better scalability
-Easier testing
-Environment-based configurations
-SaaS-ready foundation
-Cleaner service separation
-📈 SaaS Scalability Roadmap
-Feature	Status
-Modular Blueprints	✅ Ready
-Service Layer	✅ Ready
-Config Environments	✅ Ready
-JWT Authentication	🚧 Planned
-SQLAlchemy ORM	🚧 Planned
-Alembic Migrations	🚧 Planned
-Celery Task Queue	🚧 Planned
-Multi-Tenant Support	🚧 Planned
-Email Notifications	🚧 Planned
-🧪 Troubleshooting
-🎥 Camera Not Working
+---
+
+## 4️⃣ Create PostgreSQL Database
+
+```sql
+CREATE DATABASE attendance_db;
+```
+
+---
+
+# 🚀 Running the Application
+
+## Development Mode
+
+```bash
+python run.py
+```
+
+---
+
+## Production Mode
+
+```bash
+gunicorn wsgi:app --bind 0.0.0.0:5000 --workers 2
+```
+
+---
+
+## Open Application
+
+```text
+http://localhost:5000
+```
+
+---
+
+# 🌐 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Dashboard Home |
+| `/student-directory` | GET | Student Directory |
+| `/attendance-logs` | GET | Attendance Logs |
+| `/reports` | GET | Analytics Dashboard |
+| `/device-status` | GET | System Health |
+| `/video_feed` | GET | Live Camera Stream |
+| `/api/stats` | GET | Today's Statistics |
+| `/api/data` | GET | Recent Attendance Data |
+| `/api/students` | GET | Student Records |
+| `/api/attendance-logs` | GET | Attendance Logs API |
+| `/api/attendance-logs/<date>` | GET | Logs By Date |
+| `/api/weekly-stats` | GET | Weekly Reports |
+| `/api/device-status` | GET | Device Monitoring |
+| `/api/reload-faces` | POST | Reload Face Dataset |
+
+---
+
+# 🏛 Application Factory Architecture
+
+AAMS uses Flask's **Application Factory Pattern**.
+
+### Benefits
+- Modular blueprint architecture
+- Better scalability
+- Easier testing
+- Environment-based configurations
+- SaaS-ready foundation
+- Cleaner service separation
+
+---
+
+# 📈 SaaS Scalability Roadmap
+
+| Feature | Status |
+|---------|--------|
+| Modular Blueprints | ✅ Ready |
+| Service Layer | ✅ Ready |
+| Config Environments | ✅ Ready |
+| JWT Authentication | 🚧 Planned |
+| SQLAlchemy ORM | 🚧 Planned |
+| Alembic Migrations | 🚧 Planned |
+| Celery Task Queue | 🚧 Planned |
+| Multi-Tenant Support | 🚧 Planned |
+| Email Notifications | 🚧 Planned |
+
+---
+
+# 🧪 Troubleshooting
+
+## 🎥 Camera Not Working
+
 Try changing camera index:
 
+```python
 cv2.VideoCapture(0)
+```
+
 to:
 
+```python
 cv2.VideoCapture(1)
-🗄 Database Connection Failed
+```
+
+---
+
+## 🗄 Database Connection Failed
+
 Verify PostgreSQL service:
 
+```bash
 pg_isready -h localhost -p 5432
-⚠ face_recognition Installation Issue
-pip install face-recognition
-Note: face_recognition requires dlib and CMake.
+```
 
-📜 License
+---
+
+## ⚠ face_recognition Installation Issue
+
+```bash
+pip install face-recognition
+```
+
+> Note: `face_recognition` requires `dlib` and `CMake`.
+
+---
+
+# 📜 License
+
 This project is provided for:
 
-Educational Use
-Institutional Deployment
-Research & Learning
-⭐ AAMS — Automated Attendance Management System
-Built with Flask • PostgreSQL • OpenCV • AI
+- Educational Use
+- Institutional Deployment
+- Research & Learning
+
+---
+
+<div align="center">
+
+## ⭐ AAMS — Automated Attendance Management System
+
+### Built with Flask • PostgreSQL • OpenCV • AI
+
+</div>
