@@ -158,9 +158,9 @@ class DatabaseManager:
         if count_val == 0:
             sample_students = [
                 ('Abhiraj Srivastava', 'STU001', 'abhiraj@school.com', '9876543210'),
-                ('Rahul Sharma', 'STU002', 'rahul@school.com', '9876543211'),
-                ('Sanya Malhotra', 'STU003', 'sanya@school.com', '9876543212'),
-                ('Vikram Singh', 'STU004', 'vikram@school.com', '9876543213'),
+                ('Aditya Raj', 'STU002', 'Aditya@school.com', '9876543211'),
+                ('Irfana naaz', 'STU003', 'Irfana@school.com', '9876543212'),
+                ('Trisha Pathak', 'STU004', 'Trisha@school.com', '9876543213'),
                 ('Anjali Rao', 'STU005', 'anjali@school.com', '9876543214'),
                 ('Arya Panday', 'STU006', 'arya@school.com', '9876543215'),
             ]
@@ -190,7 +190,33 @@ class DatabaseManager:
                 ''', (sid, check_in, check_out, date, status, notes))
             conn.commit()
 
+        # Seed device status so /device-status page is not empty on first run.
+        cursor.execute('SELECT COUNT(*) FROM device_status')
+        dev_count_row = cursor.fetchone()
+        dev_count_val = dev_count_row.get('COUNT(*)') if isinstance(dev_count_row, dict) and 'COUNT(*)' in dev_count_row else (dev_count_row[0] if dev_count_row else 0)
+        if dev_count_val == 0:
+            now = datetime.now()
+            sample_devices = [
+                ('Camera 1', 'Active', now, 'Webcam stream OK'),
+                ('Camera 2', 'Error', now, 'No signal detected'),
+                ('Network', 'Active', now, 'Latency normal'),
+            ]
+            for name, status, last_seen, details in sample_devices:
+                try:
+                    self._execute(cursor, '''
+                        INSERT OR IGNORE INTO device_status (device_name, status, last_seen, details)
+                        VALUES (%s, %s, %s, %s)
+                    ''', (name, status, last_seen, details))
+                except Exception:
+                    # For DB variants without INSERT OR IGNORE, fall back to UPSERT-like logic.
+                    self._execute(cursor, '''
+                        INSERT INTO device_status (device_name, status, last_seen, details)
+                        VALUES (%s, %s, %s, %s)
+                    ''', (name, status, last_seen, details))
+            conn.commit()
+
         conn.close()
+
 
     # ------------------------------------------------------------------
     # Student operations

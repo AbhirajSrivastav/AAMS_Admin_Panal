@@ -1,87 +1,54 @@
-"""
-app/__init__.py
-===============
-Flask Application Factory for the AI Attendance Management System.
+"""Flask application factory for the AAMS project.
 
-This module follows the Application Factory pattern, which is the recommended
-way to create Flask apps. It allows for easier testing, configuration switching,
-and scaling (e.g., multiple app instances behind a load balancer).
+The application package lives under the directory named `APP`.
+Entry points (`run.py`, `wsgi.py`) import `create_app` via `from app import create_app`,
+where `app.py` re-exports it.
 
-Usage:
-    from app import create_app
-    app = create_app()
+This file must therefore expose a real `create_app` callable.
 """
+
+from __future__ import annotations
 
 from flask import Flask
-from app.config import config_by_name
-from app.database.db import DatabaseManager
-from app.services.face_recognition_service import FaceRecognitionService
 
-# Global service instances (initialized inside create_app)
-db_manager = None
-face_service = None
+from .config import DevelopmentConfig, ProductionConfig, TestingConfig
+from .routes.attendance_routes import attendance_bp
+from .routes.auth_routes import auth_bp
+from .routes.dashboard_routes import dashboard_bp
+from .routes.student_routes import student_bp
+
+from .services.face_recognition_service import FaceRecognitionService
+from .utils.camera import CameraManager
 
 
-def create_app(config_name='development'):
-    """
-    Application Factory: creates and configures the Flask app.
+def create_app():
+    """Application factory."""
+    app = Flask(__name__, template_folder='templates', static_folder='static')
 
-    Args:
-        config_name (str): 'development', 'production', or 'testing'
+    # Basic config selection
+    # (For simplicity we use FLASK_ENV / ENVIRONMENT if present; default to development)
+    env = (app.config.get('ENV') or None)  # placeholder for possible future config
+    import os
+    env = os.getenv('FLASK_ENV') or os.getenv('ENVIRONMENT') or 'development'
 
-    Returns:
-        Flask: Configured Flask application instance
-    """
-    global db_manager, face_service
+    config_cls = {
+        'development': DevelopmentConfig,
+        'production': ProductionConfig,
+        'testing': TestingConfig,
+    }.get(env, DevelopmentConfig)
 
-    # 1. Create the Flask app instance
-    app = Flask(
-        __name__,
-        template_folder='templates',       # Jinja2 templates location
-        static_folder='static',            # Static files (CSS, JS, images)
-        instance_relative_config=True      # Allow instance/ folder configs
-    )
+    app.config.from_object(config_cls)
 
-    # 2. Load configuration from config.py classes
-    app.config.from_object(config_by_name[config_name])
-
-    # 3. Initialize the database manager (PostgreSQL)
-    db_manager = DatabaseManager()
-
-    # 4. Initialize the face recognition service
-    #    This scans image_data/ folders and pre-computes face encodings.
-    face_service = FaceRecognitionService()
-    face_service.load_known_faces()
-
-    # 5. Register Blueprints (modular route groups)
-    from app.routes.dashboard_routes import dashboard_bp
-    from app.routes.student_routes import student_bp
-    from app.routes.attendance_routes import attendance_bp
-    from app.routes.auth_routes import auth_bp
-
+    # Register blueprints
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(attendance_bp)
     app.register_blueprint(auth_bp)
 
-    # 6. Initialize device status in database on startup
-    _init_device_status()
+    # Warm-up services that rely on app context (optional)
+    # Keep lightweight: do not start camera thread here.
+    app.extensions['face_recognition'] = FaceRecognitionService()
+    app.extensions['camera_manager'] = CameraManager()
 
     return app
-
-
-def _init_device_status():
-    """
-    Record initial system health into the database.
-    Called once during app creation.
-    """
-    from app.database.db import DatabaseManager
-    db = DatabaseManager()
-    db.update_device_status('Camera', 'Active', 'Main entrance camera - ready')
-    db.update_device_status(
-        'Face Recognition AI', 'Active',
-        f'face_recognition loaded: {len(face_service.known_face_names)} student(s)'
-    )
-    db.update_device_status('Database', 'Active', 'PostgreSQL - ready')
-    db.update_device_status('Flask Server', 'Active', 'Port 5000 - running')
 

@@ -26,73 +26,61 @@ The system automatically detects students entering through a camera feed, identi
 ## Project Structure
 
 ```
-attendance-management-system/
+AAMS_Admin_Panal/
 │
-├── app/                          # Main application package
-│   ├── __init__.py               # Flask Application Factory
-│   ├── config.py                 # Environment configurations
-│   ├── extensions.py             # Flask extension registry (SaaS-ready)
+├── run.py                     # Entry point (python run.py)
+├── wsgi.py                    # WSGI entry (for deployments)
+├── app.py                     # Compatibility shim (maps `app` imports)
+├── requirements.txt
+├── .env                       # Environment variables (DB, secret key, etc.)
+├── API_DOCUMENTATION.md
+├── README.md
+│
+├── APP/
+│   ├── __init__.py            # Flask application factory
+│   ├── config.py
+│   ├── extensions.py
 │   │
-│   ├── routes/                   # HTTP route blueprints
-│   │   ├── __init__.py
-│   │   ├── auth_routes.py        # Login/logout (scaffold)
-│   │   ├── student_routes.py     # Student management API
-│   │   ├── attendance_routes.py  # Attendance logs API
-│   │   └── dashboard_routes.py   # Home, reports, device status, video feed
+│   ├── routes/
+│   │   ├── auth_routes.py
+│   │   ├── attendance_routes.py
+│   │   ├── student_routes.py
+│   │   └── dashboard_routes.py
 │   │
-│   ├── models/                   # Data models
-│   │   ├── student.py            # Student dataclass + schema
-│   │   ├── attendance.py         # AttendanceLog dataclass + schema
-│   │   └── user.py               # User dataclass (auth scaffold)
+│   ├── services/
+│   │   ├── face_recognition_service.py
+│   │   ├── attendance_service.py
+│   │   └── report_service.py
 │   │
-│   ├── services/                 # Business logic layer
-│   │   ├── face_recognition_service.py  # Face encoding, matching, reloading
-│   │   ├── attendance_service.py        # Attendance logging with throttling
-│   │   └── report_service.py            # Dashboard stats & analytics
+│   ├── database/
+│   │   └── db.py
 │   │
-│   ├── database/                 # Database layer
-│   │   ├── db.py                 # PostgreSQL connection & CRUD
-│   │   └── migrations/           # Schema migration placeholder
-│   │
-│   ├── templates/                # Jinja2 HTML templates
-│   │   ├── base.html             # Base layout with sidebar nav
-│   │   ├── index.html            # Dashboard home
-│   │   ├── student_directory.html
-│   │   ├── attendance_logs.html
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── index.html
 │   │   ├── reports.html
-│   │   └── device_status.html
+│   │   ├── device_status.html
+│   │   ├── student_directory.html
+│   │   └── attendance_logs.html
 │   │
-│   ├── static/                   # CSS, JS, images
+│   ├── static/
 │   │   ├── css/style.css
-│   │   ├── js/main.js            # Clock, dashboard updates, activity feed
-│   │   ├── js/charts.js          # Chart.js dashboard trends
-│   │   └── js/reports.js         # Chart.js report visualizations
+│   │   └── js/
+│   │       ├── main.js
+│   │       ├── charts.js
+│   │       └── reports.js
 │   │
-│   ├── image_data/               # Student face images (CRITICAL)
-│   │   ├── student_001/          # One folder per student
-│   │   │   ├── img1.jpg
-│   │   │   ├── img2.jpg
-│   │   │   └── img3.jpg          # Multiple images = better accuracy
-│   │   └── student_002/
-│   │
-│   └── utils/                    # Utility modules
-│       ├── constants.py          # Enums & constants
-│       ├── helpers.py            # Frame encoding, ID generation
-│       └── camera.py             # Camera thread manager
-│
-├── instance/                     # Instance-specific config (not in git)
-│   └── config.py
-│
-├── .env                          # Environment variables
-├── requirements.txt              # Python dependencies
-├── run.py                        # Entry point
-├── README.md                     # This file
-└── API_DOCUMENTATION.md          # Complete API reference
+│   ├── Image_DATA/
+│   │   └── (student images)
+│   └── utils/
+│       ├── camera.py
+│       └── helpers.py
 ```
 
 ---
 
 ## How Face Recognition Works
+
 
 ### Image Dataset (`image_data/`)
 
